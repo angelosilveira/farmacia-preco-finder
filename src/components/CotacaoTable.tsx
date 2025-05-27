@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Produto, MelhorPreco } from "@/types/cotacao";
+import { REPRESENTANTES } from "@/types/categorias";
 import {
   ShoppingCart,
   Edit,
@@ -141,25 +142,37 @@ export function CotacaoTable({
     representante: string,
     produtos: Produto[]
   ) => {
+    const repInfo = REPRESENTANTES.find((r) => r.nome === representante);
+    if (!repInfo?.contato) {
+      alert("Número de contato não cadastrado para este representante");
+      return null;
+    }
+
     const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     }).format(new Date());
-
     const mensagem =
-      `Olá! Gostaria de solicitar cotação dos seguintes produtos (${dataFormatada}):\n\n` +
+      `Olá! Gostaria de fazer um pedido dos seguintes produtos com base nas últimas cotações (${dataFormatada}):\n\n` +
       produtos
         .map(
           (p) =>
             `- ${p.nome}\n` +
             `  Quantidade: ${p.quantidade} ${p.unidadeMedida}\n` +
-            `  Último preço: ${formatCurrency(p.precoUnitario)}`
+            `  Preço acordado: ${formatCurrency(p.precoUnitario)}\n` +
+            `  Total: ${formatCurrency(p.precoUnitario * p.quantidade)}`
         )
         .join("\n\n") +
-      "\n\nAguardo retorno. Obrigado!";
+      `\n\nValor total do pedido: ${formatCurrency(
+        produtos.reduce((total, p) => total + p.precoUnitario * p.quantidade, 0)
+      )}` +
+      "\n\nPor favor, confirmar faturamento e disponibilidade dos produtos. Obrigado!";
 
-    return encodeURIComponent(mensagem);
+    return {
+      telefone: repInfo.contato,
+      mensagem: encodeURIComponent(mensagem),
+    };
   };
 
   return (
@@ -464,11 +477,16 @@ export function CotacaoTable({
                   variant="ghost"
                   className="text-white hover:text-white hover:bg-green-600 border-white"
                   onClick={() => {
-                    const mensagem = criarMensagemWhatsApp(
+                    const whatsappInfo = criarMensagemWhatsApp(
                       representante,
                       produtos
                     );
-                    window.open(`https://wa.me/?text=${mensagem}`, "_blank");
+                    if (whatsappInfo) {
+                      window.open(
+                        `https://wa.me/55${whatsappInfo.telefone}?text=${whatsappInfo.mensagem}`,
+                        "_blank"
+                      );
+                    }
                   }}
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />
