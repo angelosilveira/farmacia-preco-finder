@@ -75,6 +75,12 @@ const Index = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleRemoveProduto = (id: string) => {
+    if (window.confirm("Tem certeza que deseja remover esta cotação?")) {
+      setProdutos((prev) => prev.filter((produto) => produto.id !== id));
+    }
+  };
+
   return (
     <div className="container py-6 space-y-6">
       <div className="flex items-center space-x-2">
@@ -93,6 +99,7 @@ const Index = () => {
           produtos={produtosOrdenados}
           onEditProduto={handleEditProduto}
           onDuplicateProduto={handleDuplicateProduto}
+          onRemoveProduto={handleRemoveProduto}
           isMelhorPreco={isMelhorPreco}
           formatCurrency={formatCurrency}
         />

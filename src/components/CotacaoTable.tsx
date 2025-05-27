@@ -11,12 +11,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Produto, MelhorPreco } from "@/types/cotacao";
-import { ShoppingCart, Edit, Save, X, Copy } from "lucide-react";
+import {
+  ShoppingCart,
+  Edit,
+  Save,
+  X,
+  Copy,
+  Trash2,
+  MessageCircle,
+} from "lucide-react";
 
 interface CotacaoTableProps {
   produtos: Produto[];
   onEditProduto: (id: string, produto: Produto) => void;
   onDuplicateProduto: (produto: Produto) => void;
+  onRemoveProduto: (id: string) => void;
   isMelhorPreco: (produto: Produto) => boolean;
   formatCurrency: (value: number) => string;
 }
@@ -25,6 +34,7 @@ export function CotacaoTable({
   produtos,
   onEditProduto,
   onDuplicateProduto,
+  onRemoveProduto,
   isMelhorPreco,
   formatCurrency,
 }: CotacaoTableProps) {
@@ -125,6 +135,31 @@ export function CotacaoTable({
         [field]: value,
       });
     }
+  };
+
+  const criarMensagemWhatsApp = (
+    representante: string,
+    produtos: Produto[]
+  ) => {
+    const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(new Date());
+
+    const mensagem =
+      `Olá! Gostaria de solicitar cotação dos seguintes produtos (${dataFormatada}):\n\n` +
+      produtos
+        .map(
+          (p) =>
+            `- ${p.nome}\n` +
+            `  Quantidade: ${p.quantidade} ${p.unidadeMedida}\n` +
+            `  Último preço: ${formatCurrency(p.precoUnitario)}`
+        )
+        .join("\n\n") +
+      "\n\nAguardo retorno. Obrigado!";
+
+    return encodeURIComponent(mensagem);
   };
 
   return (
@@ -392,6 +427,15 @@ export function CotacaoTable({
                                 >
                                   <Copy className="w-4 h-4" />
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => onRemoveProduto(produto.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                  title="Remover cotação"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </div>
                             )}
                           </td>
@@ -410,9 +454,26 @@ export function CotacaoTable({
         {representantes.map(({ representante, produtos }) => (
           <Card key={representante}>
             <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white">
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" />
-                {representante} - Melhores Preços ({produtos.length})
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" />
+                  {representante} - Melhores Preços ({produtos.length})
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-white hover:text-white hover:bg-green-600 border-white"
+                  onClick={() => {
+                    const mensagem = criarMensagemWhatsApp(
+                      representante,
+                      produtos
+                    );
+                    window.open(`https://wa.me/?text=${mensagem}`, "_blank");
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Enviar WhatsApp
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
