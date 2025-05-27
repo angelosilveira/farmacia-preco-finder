@@ -1,19 +1,33 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Produto, MelhorPreco } from '@/types/cotacao';
-import { ShoppingCart, Edit, Save, X } from 'lucide-react';
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Produto, MelhorPreco } from "@/types/cotacao";
+import { ShoppingCart, Edit, Save, X, Copy } from "lucide-react";
 
 interface CotacaoTableProps {
   produtos: Produto[];
   onEditProduto: (id: string, produto: Produto) => void;
+  onDuplicateProduto: (produto: Produto) => void;
+  isMelhorPreco: (produto: Produto) => boolean;
+  formatCurrency: (value: number) => string;
 }
 
-export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
+export function CotacaoTable({
+  produtos,
+  onEditProduto,
+  onDuplicateProduto,
+  isMelhorPreco,
+  formatCurrency,
+}: CotacaoTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Produto | null>(null);
 
@@ -28,54 +42,43 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
     }, {} as Record<string, Produto[]>);
 
     return Object.entries(produtosAgrupados).map(([nome, produtosList]) => {
-      const menorPreco = Math.min(...produtosList.map(p => p.precoUnitario));
-      const produtoMenorPreco = produtosList.find(p => p.precoUnitario === menorPreco)!;
-      
+      const menorPreco = Math.min(...produtosList.map((p) => p.precoUnitario));
+      const produtoMenorPreco = produtosList.find(
+        (p) => p.precoUnitario === menorPreco
+      )!;
+
       return {
         nome,
         menorPreco,
         representante: produtoMenorPreco.representante,
-        unidadeMedida: produtoMenorPreco.unidadeMedida
+        unidadeMedida: produtoMenorPreco.unidadeMedida,
       };
     });
   };
 
   const melhoresPrecos = getMelhoresPrecos();
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
   const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(date);
-  };
-
-  const isMelhorPreco = (produto: Produto) => {
-    const melhor = melhoresPrecos.find(m => m.nome === produto.nome);
-    return melhor?.menorPreco === produto.precoUnitario && melhor?.representante === produto.representante;
   };
 
   const handleEdit = (produto: Produto) => {
     setEditingId(produto.id);
     setEditData({ ...produto });
   };
-
   const handleSave = () => {
     if (editData) {
       const precoTotal = editData.precoUnitario * editData.quantidade;
-      const produtoAtualizado = {
+      const produtoAtualizado: Produto = {
         ...editData,
         precoTotal,
-        dataAtualizacao: new Date()
+        dataAtualizacao: new Date(),
       };
       onEditProduto(editData.id, produtoAtualizado);
       setEditingId(null);
@@ -87,12 +90,11 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
     setEditingId(null);
     setEditData(null);
   };
-
-  const updateEditData = (field: keyof Produto, value: any) => {
+  const updateEditData = (field: keyof Produto, value: string | number) => {
     if (editData) {
       setEditData({
         ...editData,
-        [field]: value
+        [field]: value,
       });
     }
   };
@@ -112,7 +114,9 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
             <div className="p-8 text-center text-gray-500">
               <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>Nenhuma cotação cadastrada ainda.</p>
-              <p className="text-sm">Adicione uma cotação usando o formulário acima.</p>
+              <p className="text-sm">
+                Adicione uma cotação usando o formulário acima.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -147,17 +151,23 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {produtos.map((produto) => (
-                    <tr 
-                      key={produto.id} 
-                      className={`hover:bg-gray-50 ${isMelhorPreco(produto) ? 'bg-green-50 border-l-4 border-green-500' : ''}`}
+                    <tr
+                      key={produto.id}
+                      className={`hover:bg-gray-50 ${
+                        isMelhorPreco(produto)
+                          ? "bg-green-50 border-l-4 border-green-500"
+                          : ""
+                      }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div>
                             {editingId === produto.id ? (
                               <Input
-                                value={editData?.nome || ''}
-                                onChange={(e) => updateEditData('nome', e.target.value)}
+                                value={editData?.nome || ""}
+                                onChange={(e) =>
+                                  updateEditData("nome", e.target.value)
+                                }
                                 className="w-48"
                               />
                             ) : (
@@ -165,32 +175,47 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
                                 {produto.nome}
                               </div>
                             )}
-                            {isMelhorPreco(produto) && editingId !== produto.id && (
-                              <Badge variant="default" className="mt-1 bg-green-600">
-                                Menor Preço
-                              </Badge>
-                            )}
+                            {isMelhorPreco(produto) &&
+                              editingId !== produto.id && (
+                                <Badge
+                                  variant="default"
+                                  className="mt-1 bg-green-600"
+                                >
+                                  Menor Preço
+                                </Badge>
+                              )}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {editingId === produto.id ? (
-                          <Select value={editData?.representante} onValueChange={(value) => updateEditData('representante', value)}>
+                          <Select
+                            value={editData?.representante}
+                            onValueChange={(value) =>
+                              updateEditData("representante", value)
+                            }
+                          >
                             <SelectTrigger className="w-32">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Medley">Medley</SelectItem>
                               <SelectItem value="EMS">EMS</SelectItem>
-                              <SelectItem value="Eurofarma">Eurofarma</SelectItem>
+                              <SelectItem value="Eurofarma">
+                                Eurofarma
+                              </SelectItem>
                               <SelectItem value="Germed">Germed</SelectItem>
-                              <SelectItem value="Neo Química">Neo Química</SelectItem>
+                              <SelectItem value="Neo Química">
+                                Neo Química
+                              </SelectItem>
                               <SelectItem value="Sanofi">Sanofi</SelectItem>
                               <SelectItem value="Bayer">Bayer</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
-                          <Badge variant="outline">{produto.representante}</Badge>
+                          <Badge variant="outline">
+                            {produto.representante}
+                          </Badge>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -198,8 +223,13 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
                           <Input
                             type="number"
                             step="0.01"
-                            value={editData?.precoUnitario || ''}
-                            onChange={(e) => updateEditData('precoUnitario', parseFloat(e.target.value))}
+                            value={editData?.precoUnitario || ""}
+                            onChange={(e) =>
+                              updateEditData(
+                                "precoUnitario",
+                                parseFloat(e.target.value)
+                              )
+                            }
                             className="w-24"
                           />
                         ) : (
@@ -210,8 +240,13 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
                         {editingId === produto.id ? (
                           <Input
                             type="number"
-                            value={editData?.quantidade || ''}
-                            onChange={(e) => updateEditData('quantidade', parseInt(e.target.value))}
+                            value={editData?.quantidade || ""}
+                            onChange={(e) =>
+                              updateEditData(
+                                "quantidade",
+                                parseInt(e.target.value)
+                              )
+                            }
                             className="w-20"
                           />
                         ) : (
@@ -220,12 +255,19 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {editingId === produto.id ? (
-                          <Select value={editData?.unidadeMedida} onValueChange={(value) => updateEditData('unidadeMedida', value)}>
+                          <Select
+                            value={editData?.unidadeMedida}
+                            onValueChange={(value) =>
+                              updateEditData("unidadeMedida", value)
+                            }
+                          >
                             <SelectTrigger className="w-32">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Comprimido">Comprimido</SelectItem>
+                              <SelectItem value="Comprimido">
+                                Comprimido
+                              </SelectItem>
                               <SelectItem value="Cápsula">Cápsula</SelectItem>
                               <SelectItem value="ml">ml</SelectItem>
                               <SelectItem value="mg">mg</SelectItem>
@@ -240,22 +282,25 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
-                        {editingId === produto.id ? (
-                          formatCurrency((editData?.precoUnitario || 0) * (editData?.quantidade || 0))
-                        ) : (
-                          formatCurrency(produto.precoTotal)
-                        )}
+                        {editingId === produto.id
+                          ? formatCurrency(
+                              (editData?.precoUnitario || 0) *
+                                (editData?.quantidade || 0)
+                            )
+                          : formatCurrency(produto.precoTotal)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(produto.dataAtualizacao)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {" "}
                         {editingId === produto.id ? (
                           <div className="flex space-x-2">
                             <Button
                               size="sm"
                               onClick={handleSave}
                               className="bg-green-600 hover:bg-green-700"
+                              title="Salvar"
                             >
                               <Save className="w-4 h-4" />
                             </Button>
@@ -263,18 +308,31 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
                               size="sm"
                               variant="outline"
                               onClick={handleCancel}
+                              title="Cancelar"
                             >
                               <X className="w-4 h-4" />
                             </Button>
                           </div>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(produto)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(produto)}
+                              title="Editar"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onDuplicateProduto(produto)}
+                              className="text-blue-600 hover:text-blue-700"
+                              title="Duplicar cotação"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </div>
                         )}
                       </td>
                     </tr>

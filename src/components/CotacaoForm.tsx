@@ -1,62 +1,95 @@
-
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Produto } from '@/types/cotacao';
-import { Calculator } from 'lucide-react';
+import React, { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Produto } from "@/types/cotacao";
+import { CategoriaType, REPRESENTANTES } from "@/types/categorias";
+import { Calculator } from "lucide-react";
 
 interface CotacaoFormProps {
   onAddProduto: (produto: Produto) => void;
+  initialData?: Produto;
 }
 
-export function CotacaoForm({ onAddProduto }: CotacaoFormProps) {
-  const [nome, setNome] = useState('');
-  const [precoUnitario, setPrecoUnitario] = useState('');
-  const [quantidade, setQuantidade] = useState('');
-  const [unidadeMedida, setUnidadeMedida] = useState('');
-  const [representante, setRepresentante] = useState('');
+export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
+  const [nome, setNome] = useState(initialData?.nome || "");
+  const [categoria, setCategoria] = useState<CategoriaType | "">(
+    initialData?.categoria || ""
+  );
+  const [quantidade, setQuantidade] = useState(
+    initialData?.quantidade?.toString() || ""
+  );
+  const [unidadeMedida, setUnidadeMedida] = useState(
+    initialData?.unidadeMedida || ""
+  );
+  const [representante, setRepresentante] = useState(
+    initialData?.representante || ""
+  );
+  const [precoUnitario, setPrecoUnitario] = useState(
+    initialData?.precoUnitario?.toString() || ""
+  );
+
+  // Filtra os representantes baseado na categoria selecionada
+  const representantesFiltrados = useMemo(() => {
+    if (!categoria) return [];
+    return REPRESENTANTES.filter((rep) =>
+      rep.categorias.includes(categoria)
+    ).map((rep) => rep.nome);
+  }, [categoria]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!nome || !precoUnitario || !quantidade || !unidadeMedida || !representante) {
-      alert('Por favor, preencha todos os campos');
+    if (
+      !nome ||
+      !categoria ||
+      !precoUnitario ||
+      !quantidade ||
+      !unidadeMedida ||
+      !representante
+    ) {
+      alert("Por favor, preencha todos os campos");
       return;
     }
 
     const precoUnit = parseFloat(precoUnitario);
     const qtd = parseInt(quantidade);
     const precoTotal = precoUnit * qtd;
-
     const novoProduto: Produto = {
       id: Date.now().toString(),
       nome,
+      categoria: categoria as CategoriaType,
       precoUnitario: precoUnit,
       quantidade: qtd,
       unidadeMedida,
       precoTotal,
       representante,
-      dataAtualizacao: new Date()
+      dataAtualizacao: new Date(),
     };
 
-    onAddProduto(novoProduto);
-    
-    // Limpar formulário
-    setNome('');
-    setPrecoUnitario('');
-    setQuantidade('');
-    setUnidadeMedida('');
-    setRepresentante('');
+    onAddProduto(novoProduto); // Limpar formulário
+    setNome("");
+    setCategoria("");
+    setPrecoUnitario("");
+    setQuantidade("");
+    setUnidadeMedida("");
+    setRepresentante("");
   };
 
-  const precoTotal = precoUnitario && quantidade ? 
-    (parseFloat(precoUnitario) * parseInt(quantidade)).toFixed(2) : '0.00';
+  const precoTotal =
+    precoUnitario && quantidade
+      ? (parseFloat(precoUnitario) * parseInt(quantidade)).toFixed(2)
+      : "0.00";
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full">
       <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white">
         <CardTitle className="flex items-center gap-2">
           <Calculator className="w-5 h-5" />
@@ -64,8 +97,8 @@ export function CotacaoForm({ onAddProduto }: CotacaoFormProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="nome">Nome do Produto</Label>
               <Input
@@ -77,27 +110,61 @@ export function CotacaoForm({ onAddProduto }: CotacaoFormProps) {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="representante">Representante</Label>
-              <Select value={representante} onValueChange={setRepresentante} required>
+              <Label htmlFor="categoria">Categoria</Label>
+              <Select
+                value={categoria}
+                onValueChange={(value) => {
+                  setCategoria(value as CategoriaType);
+                  setRepresentante("");
+                }}
+                required
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o representante" />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Medley">Medley</SelectItem>
-                  <SelectItem value="EMS">EMS</SelectItem>
-                  <SelectItem value="Eurofarma">Eurofarma</SelectItem>
-                  <SelectItem value="Germed">Germed</SelectItem>
-                  <SelectItem value="Neo Química">Neo Química</SelectItem>
-                  <SelectItem value="Sanofi">Sanofi</SelectItem>
-                  <SelectItem value="Bayer">Bayer</SelectItem>
+                  <SelectItem value="Medicamentos">Medicamentos</SelectItem>
+                  <SelectItem value="Perfumaria">Perfumaria</SelectItem>
+                  <SelectItem value="Higiene Pessoal">
+                    Higiene Pessoal
+                  </SelectItem>
+                  <SelectItem value="Cosméticos">Cosméticos</SelectItem>
+                  <SelectItem value="Dermocosméticos">
+                    Dermocosméticos
+                  </SelectItem>
+                  <SelectItem value="Nutrição">Nutrição</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="representante">Representante</Label>
+              <Select
+                value={representante}
+                onValueChange={setRepresentante}
+                required
+                disabled={!categoria}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      categoria ? "Selecione" : "Selecione categoria"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {representantesFiltrados.map((rep) => (
+                    <SelectItem key={rep} value={rep}>
+                      {rep}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="precoUnitario">Preço Unitário (R$)</Label>
               <Input
@@ -110,7 +177,7 @@ export function CotacaoForm({ onAddProduto }: CotacaoFormProps) {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="quantidade">Quantidade</Label>
               <Input
@@ -122,10 +189,14 @@ export function CotacaoForm({ onAddProduto }: CotacaoFormProps) {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="unidadeMedida">Unidade de Medida</Label>
-              <Select value={unidadeMedida} onValueChange={setUnidadeMedida} required>
+              <Label htmlFor="unidadeMedida">Unidade</Label>
+              <Select
+                value={unidadeMedida}
+                onValueChange={setUnidadeMedida}
+                required
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -152,7 +223,10 @@ export function CotacaoForm({ onAddProduto }: CotacaoFormProps) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
+          <Button
+            type="submit"
+            className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+          >
             Adicionar Cotação
           </Button>
         </form>

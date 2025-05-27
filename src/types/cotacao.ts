@@ -1,7 +1,9 @@
+import { CategoriaType } from "./categorias";
 
 export interface Produto {
   id: string;
   nome: string;
+  categoria: CategoriaType;
   precoUnitario: number;
   quantidade: number;
   unidadeMedida: string;
