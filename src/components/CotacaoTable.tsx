@@ -58,6 +58,18 @@ export function CotacaoTable({
 
   const melhoresPrecos = getMelhoresPrecos();
 
+  const calcularDiferencaPercentual = (produto: Produto) => {
+    const melhorPreco = melhoresPrecos.find((mp) => mp.nome === produto.nome);
+    if (!melhorPreco || produto.precoUnitario === melhorPreco.menorPreco) {
+      return null;
+    }
+    const diferenca =
+      ((produto.precoUnitario - melhorPreco.menorPreco) /
+        melhorPreco.menorPreco) *
+      100;
+    return Math.round(diferenca * 100) / 100; // Arredonda para 2 casas decimais
+  };
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
@@ -140,6 +152,9 @@ export function CotacaoTable({
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Preço Total
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Diferença
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Data
@@ -288,6 +303,18 @@ export function CotacaoTable({
                                 (editData?.quantidade || 0)
                             )
                           : formatCurrency(produto.precoTotal)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {(() => {
+                          const diferenca =
+                            calcularDiferencaPercentual(produto);
+                          if (diferenca === null) return "-";
+                          return (
+                            <span className="text-orange-600">
+                              {diferenca.toFixed(1)}% mais caro
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(produto.dataAtualizacao)}
