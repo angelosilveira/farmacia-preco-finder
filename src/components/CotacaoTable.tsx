@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Produto, MelhorPreco } from '@/types/cotacao';
-import { ShoppingCart, Search, Edit, Save, X } from 'lucide-react';
+import { ShoppingCart, Edit, Save, X } from 'lucide-react';
 
 interface CotacaoTableProps {
   produtos: Produto[];
@@ -99,43 +99,6 @@ export function CotacaoTable({ produtos, onEditProduto }: CotacaoTableProps) {
 
   return (
     <div className="space-y-6">
-      {/* Resumo dos Melhores Preços */}
-      {melhoresPrecos.length > 0 && (
-        <Card>
-          <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white">
-            <CardTitle className="flex items-center gap-2">
-              <Search className="w-5 h-5" />
-              Melhores Preços por Produto
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {melhoresPrecos.map((melhor, index) => (
-                <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-800 mb-2">{melhor.nome}</h4>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span>Menor Preço:</span>
-                      <span className="font-bold text-green-600">
-                        {formatCurrency(melhor.menorPreco)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Representante:</span>
-                      <Badge variant="secondary">{melhor.representante}</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Unidade:</span>
-                      <span>{melhor.unidadeMedida}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Tabela de Todas as Cotações */}
       <Card>
         <CardHeader className="bg-gradient-to-r from-blue-600 to-green-600 text-white">
