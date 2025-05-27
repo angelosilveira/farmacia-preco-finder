@@ -12,6 +12,15 @@ const Index = () => {
     setProdutos(prev => [...prev, novoProduto]);
   };
 
+  const handleEditProduto = (id: string, produtoEditado: Produto) => {
+    setProdutos(prev => prev.map(produto => 
+      produto.id === id ? produtoEditado : produto
+    ));
+  };
+
+  // Ordenar produtos por preço unitário (menores preços abaixo)
+  const produtosOrdenados = [...produtos].sort((a, b) => b.precoUnitario - a.precoUnitario);
+
   const totalCotacoes = produtos.length;
   const totalValor = produtos.reduce((sum, produto) => sum + produto.precoTotal, 0);
 
@@ -68,7 +77,7 @@ const Index = () => {
           </div>
 
           {/* Tabela de Cotações */}
-          <CotacaoTable produtos={produtos} />
+          <CotacaoTable produtos={produtosOrdenados} onEditProduto={handleEditProduto} />
         </div>
       </div>
 
