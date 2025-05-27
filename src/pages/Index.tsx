@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CotacaoForm } from '@/components/CotacaoForm';
 import { CotacaoTable } from '@/components/CotacaoTable';
@@ -18,8 +17,25 @@ const Index = () => {
     ));
   };
 
-  // Ordenar produtos por preço unitário (menores preços abaixo)
-  const produtosOrdenados = [...produtos].sort((a, b) => b.precoUnitario - a.precoUnitario);
+  // Função para verificar se é o menor preço
+  const isMelhorPreco = (produto: Produto) => {
+    const produtosComMesmoNome = produtos.filter(p => p.nome === produto.nome);
+    const menorPreco = Math.min(...produtosComMesmoNome.map(p => p.precoUnitario));
+    return produto.precoUnitario === menorPreco;
+  };
+
+  // Ordenar produtos: produtos com menor preço (que têm o badge) ficam abaixo
+  const produtosOrdenados = [...produtos].sort((a, b) => {
+    const aEhMenorPreco = isMelhorPreco(a);
+    const bEhMenorPreco = isMelhorPreco(b);
+    
+    // Se apenas um deles é menor preço, coloca o menor preço abaixo
+    if (aEhMenorPreco && !bEhMenorPreco) return 1;
+    if (!aEhMenorPreco && bEhMenorPreco) return -1;
+    
+    // Se ambos são ou não são menor preço, ordena por preço unitário (maior para menor)
+    return b.precoUnitario - a.precoUnitario;
+  });
 
   const totalCotacoes = produtos.length;
   const totalValor = produtos.reduce((sum, produto) => sum + produto.precoTotal, 0);
