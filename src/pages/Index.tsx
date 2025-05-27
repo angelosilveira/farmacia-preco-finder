@@ -24,8 +24,13 @@ const Index = () => {
     return produto.precoUnitario === menorPreco;
   };
 
-  // Ordenar produtos: produtos com menor preço (que têm o badge) ficam abaixo
+  // Ordenar produtos: primeiro por representante, depois produtos com menor preço (que têm o badge) ficam abaixo
   const produtosOrdenados = [...produtos].sort((a, b) => {
+    // Primeiro ordena por representante (alfabeticamente)
+    const representanteComparison = a.representante.localeCompare(b.representante);
+    if (representanteComparison !== 0) return representanteComparison;
+    
+    // Dentro do mesmo representante, verifica se é menor preço
     const aEhMenorPreco = isMelhorPreco(a);
     const bEhMenorPreco = isMelhorPreco(b);
     
