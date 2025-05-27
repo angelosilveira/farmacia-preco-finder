@@ -75,9 +75,8 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
     const precoUnit = parseFloat(precoUnitario);
     const qtd = parseInt(quantidade);
     const precoTotal = precoUnit * qtd;
-
     const novoProduto: Produto = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       nome,
       categoria: categoria as CategoriaType,
       precoUnitario: precoUnit,

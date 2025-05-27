@@ -95,14 +95,19 @@ export function CotacaoTable({
     return Math.round(diferenca * 100) / 100; // Arredonda para 2 casas decimais
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) {
+      console.error("Invalid date:", date);
+      return "Data inválida";
+    }
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    }).format(date);
+    }).format(dateObj);
   };
 
   const handleEdit = (produto: Produto) => {

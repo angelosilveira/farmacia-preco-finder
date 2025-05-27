@@ -44,4 +44,9 @@ export const REPRESENTANTES: Representante[] = [
     categorias: ["Medicamentos"],
     contato: "5577981161674",
   },
+  {
+    nome: "TIAGO ORGAFARMA",
+    categorias: ["Medicamentos"],
+    contato: "5577999070022",
+  },
 ];
