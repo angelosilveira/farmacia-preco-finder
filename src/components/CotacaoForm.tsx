@@ -21,7 +21,9 @@ interface CotacaoFormProps {
 
 export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
   const [nome, setNome] = useState("");
-  const [categoria, setCategoria] = useState<CategoriaType | "">("");
+  const [categoria, setCategoria] = useState<CategoriaType | "">(
+    "Medicamentos"
+  );
   const [precoUnitario, setPrecoUnitario] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [unidadeMedida, setUnidadeMedida] = useState("");
@@ -37,9 +39,9 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
       setUnidadeMedida(initialData.unidadeMedida);
       setRepresentante(initialData.representante);
     } else {
-      // Clear form when initialData is removed
+      // Clear form when initialData is removed, but keep Medicamentos as default category
       setNome("");
-      setCategoria("");
+      setCategoria("Medicamentos");
       setPrecoUnitario("");
       setQuantidade("");
       setUnidadeMedida("");

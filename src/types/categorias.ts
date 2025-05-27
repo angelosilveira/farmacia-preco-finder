@@ -15,68 +15,33 @@ export interface Representante {
 
 export const REPRESENTANTES: Representante[] = [
   {
-    nome: "Medley",
+    nome: "CIRLANE RECOMED",
     categorias: ["Medicamentos"],
-    contato: "5577988634987",
+    contato: "5577981130802",
   },
   {
-    nome: "EMS",
+    nome: "LUIS TOTAL",
     categorias: ["Medicamentos"],
-    contato: "5511999999902",
+    contato: "5577988100406",
   },
   {
-    nome: "Eurofarma",
+    nome: "VINICIUS RD",
     categorias: ["Medicamentos"],
-    contato: "5511999999903",
+    contato: "77988718274",
   },
   {
-    nome: "Germed",
+    nome: "EDUARDO DPC",
     categorias: ["Medicamentos"],
-    contato: "5511999999904",
+    contato: "5577999381140",
   },
   {
-    nome: "Neo Química",
+    nome: "SILVANEIDE CINTRAFARMA",
     categorias: ["Medicamentos"],
-    contato: "5511999999905",
+    contato: "5575998412137",
   },
   {
-    nome: "Sanofi",
-    categorias: ["Medicamentos", "Dermocosméticos"],
-    contato: "5511999999906",
-  },
-  {
-    nome: "Bayer",
-    categorias: ["Medicamentos", "Nutrição"],
-    contato: "5511999999907",
-  },
-  {
-    nome: "L'Oréal",
-    categorias: ["Cosméticos", "Perfumaria"],
-    contato: "5511999999908",
-  },
-  {
-    nome: "Avon",
-    categorias: ["Cosméticos", "Perfumaria", "Higiene Pessoal"],
-    contato: "5511999999909",
-  },
-  {
-    nome: "Natura",
-    categorias: ["Cosméticos", "Perfumaria", "Higiene Pessoal"],
-    contato: "5511999999910",
-  },
-  {
-    nome: "Boticário",
-    categorias: ["Cosméticos", "Perfumaria", "Higiene Pessoal"],
-    contato: "5511999999911",
-  },
-  {
-    nome: "La Roche-Posay",
-    categorias: ["Dermocosméticos"],
-    contato: "5511999999912",
-  },
-  {
-    nome: "Vichy",
-    categorias: ["Dermocosméticos"],
-    contato: "5511999999913",
+    nome: "LAZARO GERMED",
+    categorias: ["Medicamentos"],
+    contato: "5577981161674",
   },
 ];
