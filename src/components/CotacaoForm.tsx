@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,22 +20,32 @@ interface CotacaoFormProps {
 }
 
 export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
-  const [nome, setNome] = useState(initialData?.nome || "");
-  const [categoria, setCategoria] = useState<CategoriaType | "">(
-    initialData?.categoria || ""
-  );
-  const [quantidade, setQuantidade] = useState(
-    initialData?.quantidade?.toString() || ""
-  );
-  const [unidadeMedida, setUnidadeMedida] = useState(
-    initialData?.unidadeMedida || ""
-  );
-  const [representante, setRepresentante] = useState(
-    initialData?.representante || ""
-  );
-  const [precoUnitario, setPrecoUnitario] = useState(
-    initialData?.precoUnitario?.toString() || ""
-  );
+  const [nome, setNome] = useState("");
+  const [categoria, setCategoria] = useState<CategoriaType | "">("");
+  const [precoUnitario, setPrecoUnitario] = useState("");
+  const [quantidade, setQuantidade] = useState("");
+  const [unidadeMedida, setUnidadeMedida] = useState("");
+  const [representante, setRepresentante] = useState("");
+
+  // Update form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setNome(initialData.nome);
+      setCategoria(initialData.categoria);
+      setPrecoUnitario(initialData.precoUnitario.toString());
+      setQuantidade(initialData.quantidade.toString());
+      setUnidadeMedida(initialData.unidadeMedida);
+      setRepresentante(initialData.representante);
+    } else {
+      // Clear form when initialData is removed
+      setNome("");
+      setCategoria("");
+      setPrecoUnitario("");
+      setQuantidade("");
+      setUnidadeMedida("");
+      setRepresentante("");
+    }
+  }, [initialData]);
 
   // Filtra os representantes baseado na categoria selecionada
   const representantesFiltrados = useMemo(() => {
@@ -47,6 +57,7 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (
       !nome ||
       !categoria ||
@@ -62,6 +73,7 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
     const precoUnit = parseFloat(precoUnitario);
     const qtd = parseInt(quantidade);
     const precoTotal = precoUnit * qtd;
+
     const novoProduto: Produto = {
       id: Date.now().toString(),
       nome,
@@ -74,7 +86,9 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
       dataAtualizacao: new Date(),
     };
 
-    onAddProduto(novoProduto); // Limpar formulário
+    onAddProduto(novoProduto);
+
+    // Limpar formulário
     setNome("");
     setCategoria("");
     setPrecoUnitario("");
@@ -93,7 +107,7 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
       <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white">
         <CardTitle className="flex items-center gap-2">
           <Calculator className="w-5 h-5" />
-          Nova Cotação de Medicamento
+          {initialData ? "Duplicar Cotação" : "Nova Cotação de Medicamento"}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
@@ -227,7 +241,7 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
             type="submit"
             className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
           >
-            Adicionar Cotação
+            {initialData ? "Duplicar Cotação" : "Adicionar Cotação"}
           </Button>
         </form>
       </CardContent>
