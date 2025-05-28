@@ -1,6 +1,11 @@
 import { ListChecks, Grid, List, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
+import { Routes, Route } from "react-router-dom";
+import ListaCategorias from "./categorias/ListaCategorias";
+import AdicionarCategoria from "./categorias/AdicionarCategoria";
+import EditarCategoria from "./categorias/EditarCategoria";
+import VisaoGeralCategorias from "./categorias/VisaoGeralCategorias";
 
 const sidebarItems = [
   {
@@ -42,10 +47,12 @@ export default function Categorias() {
                   <CardTitle>Gerenciamento de Categorias</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {/* Conteúdo do gerenciamento de categorias será implementado aqui */}
-                  <p className="text-muted-foreground">
-                    Esta funcionalidade será implementada em breve.
-                  </p>
+                  <Routes>
+                    <Route path="/" element={<VisaoGeralCategorias />} />
+                    <Route path="/lista" element={<ListaCategorias />} />
+                    <Route path="/adicionar" element={<AdicionarCategoria />} />
+                    <Route path="/editar/:id" element={<EditarCategoria />} />
+                  </Routes>
                 </CardContent>
               </Card>
             </div>
