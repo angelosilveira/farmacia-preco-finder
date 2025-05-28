@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -22,6 +23,7 @@ interface Representante {
 }
 
 export default function ListaRepresentantes() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [representantes, setRepresentantes] = useState<Representante[]>([]);
@@ -58,10 +60,8 @@ export default function ListaRepresentantes() {
       value.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
-
   const handleEdit = (id: string) => {
-    // Implementar edição
-    console.log("Editar representante:", id);
+    navigate(`/representantes/editar/${id}`);
   };
 
   const handleDelete = async (id: string) => {

@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Routes, Route, useLocation } from "react-router-dom";
 import ListaRepresentantes from "./representantes/ListaRepresentantes";
 import AdicionarRepresentante from "./representantes/AdicionarRepresentante";
+import EditarRepresentante from "./representantes/EditarRepresentante";
 
 const sidebarItems = [
   {
@@ -59,6 +60,10 @@ export default function Representantes() {
                     <Route
                       path="/adicionar"
                       element={<AdicionarRepresentante />}
+                    />
+                    <Route
+                      path="/editar/:id"
+                      element={<EditarRepresentante />}
                     />
                     <Route
                       path="/contatos"

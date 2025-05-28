@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -37,9 +37,12 @@ const formSchema = z.object({
     .nullable(),
 });
 
-export default function AdicionarRepresentante() {
+export default function EditarRepresentante() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,27 +52,66 @@ export default function AdicionarRepresentante() {
       email: "",
     },
   });
+
+  useEffect(() => {
+    async function fetchRepresentante() {
+      try {
+        const { data, error } = await supabase
+          .from("representantes")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error) throw error;
+        if (!data) throw new Error("Representante não encontrado");
+
+        // Preenche o formulário com os dados do representante
+        form.reset({
+          nome: data.nome,
+          empresa: data.empresa,
+          telefone: data.telefone,
+          email: data.email || "",
+        });
+      } catch (error) {
+        console.error("Erro ao carregar representante:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados do representante.",
+          variant: "destructive",
+        });
+        navigate("/representantes/lista");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (id) {
+      fetchRepresentante();
+    }
+  }, [id, form, navigate]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!id) return;
+
     try {
       setIsSubmitting(true);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("representantes")
-        .insert([values])
-        .select()
-        .single();
+        .update(values)
+        .eq("id", id);
 
       if (error) throw error;
 
       toast({
-        title: "Representante adicionado",
-        description: "O representante foi cadastrado com sucesso!",
+        title: "Representante atualizado",
+        description: "Os dados foram atualizados com sucesso!",
       });
       navigate("/representantes/lista");
     } catch (error) {
-      console.error("Erro ao adicionar representante:", error);
+      console.error("Erro ao atualizar representante:", error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao adicionar o representante.",
+        description: "Ocorreu um erro ao atualizar o representante.",
         variant: "destructive",
       });
     } finally {
@@ -77,11 +119,22 @@ export default function AdicionarRepresentante() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-2 text-muted-foreground">
+          Carregando dados do representante...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>Adicionar Representante</CardTitle>
+          <CardTitle>Editar Representante</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -99,6 +152,7 @@ export default function AdicionarRepresentante() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="empresa"
@@ -112,6 +166,7 @@ export default function AdicionarRepresentante() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="telefone"
@@ -125,6 +180,7 @@ export default function AdicionarRepresentante() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="email"
@@ -141,7 +197,8 @@ export default function AdicionarRepresentante() {
                     <FormMessage />
                   </FormItem>
                 )}
-              />{" "}
+              />
+
               <div className="flex gap-4">
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
