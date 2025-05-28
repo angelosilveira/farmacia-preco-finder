@@ -5,7 +5,7 @@ import * as z from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Save, Check } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,8 +16,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
   SelectContent,
@@ -44,11 +44,6 @@ const formSchema = z.object({
   responsavel: z.string().min(1, "Selecione o responsável pelo fechamento"),
   observacoes: z.string().optional(),
 });
-
-type FormField = {
-  onChange: (value: string) => void;
-  value: string;
-};
 
 type Usuario = {
   id: string;
@@ -97,62 +92,31 @@ export default function FechamentoCaixa() {
     fetchUsuarios();
   }, []);
 
-  const formatCurrency = (value: string) => {
-    const number =
-      parseFloat(value.replace(/[^\d,-]/g, "").replace(",", ".")) || 0;
+  const parseValue = (val: string) =>
+    parseFloat(val.replace(/[^\d,-]/g, "").replace(",", "."));
+
+  const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(number);
-  };
-
-  const handleCurrencyInput = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: FormField
-  ) => {
-    // Remove R$, espaços e outros caracteres não numéricos inicialmente
-    let value = e.target.value.replace(/[R$\s]/g, "");
-
-    // Se o campo estiver vazio ou contiver apenas separadores, retorna zero
-    if (!value || value === "," || value === "." || value === "0") {
-      field.onChange("R$ 0,00");
-      return;
-    }
-
-    // Remove todos os caracteres exceto números e vírgula
-    value = value.replace(/[^\d,]/g, "");
-
-    // Converte vírgula para ponto para o cálculo
-    const numberValue = parseFloat(value.replace(",", "."));
-
-    // Se não for um número válido, mantém o valor anterior ou retorna zero
-    if (isNaN(numberValue)) {
-      field.onChange(field.value || "R$ 0,00");
-      return;
-    }
-
-    // Formata o valor como moeda
-    field.onChange(formatCurrency(numberValue.toString()));
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
   };
 
   const calculateTotal = () => {
     const values = form.getValues();
     const total =
-      parseFloat(values.dinheiro.replace(/[^\d,-]/g, "").replace(",", ".")) +
-      parseFloat(values.pix.replace(/[^\d,-]/g, "").replace(",", ".")) +
-      parseFloat(
-        values.cartaoCredito.replace(/[^\d,-]/g, "").replace(",", ".")
-      ) +
-      parseFloat(values.cartaoDebito.replace(/[^\d,-]/g, "").replace(",", "."));
-    return formatCurrency(total.toString());
+      parseValue(values.dinheiro) +
+      parseValue(values.pix) +
+      parseValue(values.cartaoCredito) +
+      parseValue(values.cartaoDebito);
+    return formatCurrency(total);
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setIsSubmitting(true);
-
-      const parseValue = (val: string) =>
-        parseFloat(val.replace(/[^\d,-]/g, "").replace(",", "."));
 
       const valorInicial = parseValue(values.valorInicial);
       const dinheiro = parseValue(values.dinheiro);
@@ -243,10 +207,10 @@ export default function FechamentoCaixa() {
                   <FormItem>
                     <FormLabel>Valor Inicial</FormLabel>
                     <FormControl>
-                      <Input
+                      <CurrencyInput
                         placeholder="R$ 0,00"
-                        onChange={(e) => handleCurrencyInput(e, field)}
                         value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormDescription>
@@ -265,10 +229,10 @@ export default function FechamentoCaixa() {
                     <FormItem>
                       <FormLabel>Dinheiro</FormLabel>
                       <FormControl>
-                        <Input
+                        <CurrencyInput
                           placeholder="R$ 0,00"
-                          onChange={(e) => handleCurrencyInput(e, field)}
                           value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />
@@ -283,10 +247,10 @@ export default function FechamentoCaixa() {
                     <FormItem>
                       <FormLabel>PIX</FormLabel>
                       <FormControl>
-                        <Input
+                        <CurrencyInput
                           placeholder="R$ 0,00"
-                          onChange={(e) => handleCurrencyInput(e, field)}
                           value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />
@@ -301,10 +265,10 @@ export default function FechamentoCaixa() {
                     <FormItem>
                       <FormLabel>Cartão de Crédito</FormLabel>
                       <FormControl>
-                        <Input
+                        <CurrencyInput
                           placeholder="R$ 0,00"
-                          onChange={(e) => handleCurrencyInput(e, field)}
                           value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />
@@ -319,10 +283,10 @@ export default function FechamentoCaixa() {
                     <FormItem>
                       <FormLabel>Cartão de Débito</FormLabel>
                       <FormControl>
-                        <Input
+                        <CurrencyInput
                           placeholder="R$ 0,00"
-                          onChange={(e) => handleCurrencyInput(e, field)}
                           value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />
