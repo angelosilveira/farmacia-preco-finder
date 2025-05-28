@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { UploadCloud, CheckCircle2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useForm } from "react-hook-form";
+import { Input as UiInput } from "@/components/ui/input";
 import type { ContaPagar } from "@/types/contasPagar";
 
 // Types for joined data
@@ -37,11 +58,19 @@ export default function ListaContasPagar() {
   const [categorias, setCategorias] = useState<{ id: string; nome: string }[]>(
     []
   );
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [fornecedorFilter, setFornecedorFilter] = useState<string>("");
-  const [categoriaFilter, setCategoriaFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("__all__");
+  const [fornecedorFilter, setFornecedorFilter] = useState<string>("__all__");
+  const [categoriaFilter, setCategoriaFilter] = useState<string>("__all__");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [partialPayId, setPartialPayId] = useState<string | null>(null);
+  const [partialPayOpen, setPartialPayOpen] = useState(false);
+  const [partialPayLoading, setPartialPayLoading] = useState(false);
+  const [partialPayTotal, setPartialPayTotal] = useState<number>(0);
+  const [partialPayValue, setPartialPayValue] = useState<string>("");
 
   useEffect(() => {
     fetchFilters();
@@ -115,15 +144,144 @@ export default function ListaContasPagar() {
     }).format(value);
   }
 
+  async function marcarComoPago(id: string) {
+    setPayingId(id);
+    const { error } = await supabase
+      .from("contas_pagar")
+      .update({ status: "pago", data_pagamento: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível marcar como pago.",
+      });
+    } else {
+      toast({
+        title: "Conta paga",
+        description: "Status atualizado com sucesso.",
+      });
+      fetchContas();
+    }
+    setPayingId(null);
+  }
+
+  async function handleUploadComprovante(contaId: string, file: File) {
+    setUploadingId(contaId);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `comprovantes/${contaId}_${Date.now()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from("comprovantes")
+      .upload(filePath, file);
+    if (uploadError) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao enviar comprovante.",
+      });
+      setUploadingId(null);
+      return;
+    }
+    const { data: urlData } = supabase.storage
+      .from("comprovantes")
+      .getPublicUrl(filePath);
+    const url = urlData?.publicUrl || null;
+    const { error: updateError } = await supabase
+      .from("contas_pagar")
+      .update({ comprovante_url: url })
+      .eq("id", contaId);
+    if (updateError) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Falha ao salvar comprovante.",
+      });
+    } else {
+      toast({
+        title: "Comprovante enviado",
+        description: "Comprovante anexado com sucesso.",
+      });
+      fetchContas();
+    }
+    setUploadingId(null);
+  }
+
+  function triggerFileInput(contaId: string) {
+    if (fileInputRef.current) {
+      fileInputRef.current.dataset.contaId = contaId;
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const contaId = e.target.dataset.contaId;
+    if (file && contaId) {
+      handleUploadComprovante(contaId, file);
+    }
+  }
+
+  function openPartialPayDialog(conta: ContaPagarWithJoin) {
+    setPartialPayId(conta.id);
+    setPartialPayTotal(conta.valor_total);
+    setPartialPayValue("");
+    setPartialPayOpen(true);
+  }
+
+  async function handlePartialPay() {
+    if (!partialPayId) return;
+    setPartialPayLoading(true);
+    const valorPago = parseFloat(
+      partialPayValue.replace(/[^\d,.]/g, "").replace(",", ".")
+    );
+    if (isNaN(valorPago) || valorPago <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Valor inválido",
+        description: "Informe um valor válido.",
+      });
+      setPartialPayLoading(false);
+      return;
+    }
+    const status = valorPago >= partialPayTotal ? "pago" : "em_aberto";
+    const { error } = await supabase
+      .from("contas_pagar")
+      .update({
+        valor_pago: valorPago,
+        status,
+        data_pagamento: status === "pago" ? new Date().toISOString() : null,
+      })
+      .eq("id", partialPayId);
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível registrar o pagamento.",
+      });
+    } else {
+      toast({
+        title: "Pagamento registrado",
+        description: "Pagamento parcial salvo com sucesso.",
+      });
+      fetchContas();
+      setPartialPayOpen(false);
+    }
+    setPartialPayLoading(false);
+  }
+
   // Filtros locais
   const filteredContas = contas.filter((conta) => {
-    const matchStatus = statusFilter ? conta.status === statusFilter : true;
-    const matchFornecedor = fornecedorFilter
-      ? conta.fornecedor_id === fornecedorFilter
-      : true;
-    const matchCategoria = categoriaFilter
-      ? conta.categoria_id === categoriaFilter
-      : true;
+    const matchStatus =
+      statusFilter !== "__all__" ? conta.status === statusFilter : true;
+    const matchFornecedor =
+      fornecedorFilter !== "__all__"
+        ? conta.fornecedor_id === fornecedorFilter
+        : true;
+    const matchCategoria =
+      categoriaFilter !== "__all__"
+        ? conta.categoria_id === categoriaFilter
+        : true;
     const matchSearch = search
       ? conta.descricao.toLowerCase().includes(search.toLowerCase())
       : true;
@@ -139,7 +297,7 @@ export default function ListaContasPagar() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="__all__">Todos</SelectItem>
               <SelectItem value="em_aberto">Em Aberto</SelectItem>
               <SelectItem value="pago">Pago</SelectItem>
               <SelectItem value="atrasado">Atrasado</SelectItem>
@@ -150,7 +308,7 @@ export default function ListaContasPagar() {
               <SelectValue placeholder="Fornecedor" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="__all__">Todos</SelectItem>
               {fornecedores.map((f) => (
                 <SelectItem key={f.id} value={f.id}>
                   {f.nome}
@@ -163,7 +321,7 @@ export default function ListaContasPagar() {
               <SelectValue placeholder="Categoria" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="__all__">Todas</SelectItem>
               {categorias.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.nome}
@@ -221,15 +379,111 @@ export default function ListaContasPagar() {
                   <Button size="sm" variant="outline">
                     Editar
                   </Button>
-                  <Button size="sm" variant="ghost">
-                    Pagar
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={payingId === conta.id}
+                        title="Marcar como pago"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Marcar como pago?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja marcar esta conta como paga?
+                          Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => marcarComoPago(conta.id)}
+                          className="bg-green-600 text-white hover:bg-green-700"
+                        >
+                          Confirmar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    title="Pagamento parcial"
+                    onClick={() => openPartialPayDialog(conta)}
+                    disabled={payingId === conta.id}
+                  >
+                    %
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    title="Upload comprovante"
+                    onClick={() => triggerFileInput(conta.id)}
+                    disabled={uploadingId === conta.id}
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                  </Button>
+                  {conta.comprovante_url && (
+                    <a
+                      href={conta.comprovante_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 underline ml-1"
+                    >
+                      Ver
+                    </a>
+                  )}
                 </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={onFileChange}
+      />
+      <Dialog open={partialPayOpen} onOpenChange={setPartialPayOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pagamento Parcial</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div>
+              Total da conta: <b>{formatCurrency(partialPayTotal)}</b>
+            </div>
+            <UiInput
+              type="text"
+              placeholder="Valor pago (ex: 100,00)"
+              value={partialPayValue}
+              onChange={(e) => setPartialPayValue(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPartialPayOpen(false)}
+              disabled={partialPayLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handlePartialPay}
+              disabled={partialPayLoading || !partialPayValue}
+            >
+              {partialPayLoading ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

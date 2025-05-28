@@ -46,12 +46,9 @@ export default function ContasPagar() {
                 </CardHeader>
                 <CardContent>
                   <Routes>
-                    <Route path="/" element={<DashboardContasPagar />} />
-                    <Route path="/lista" element={<ListaContasPagar />} />
-                    <Route
-                      path="/adicionar"
-                      element={<AdicionarContaPagar />}
-                    />
+                    <Route index element={<DashboardContasPagar />} />
+                    <Route path="lista" element={<ListaContasPagar />} />
+                    <Route path="adicionar" element={<AdicionarContaPagar />} />
                   </Routes>
                 </CardContent>
               </Card>
