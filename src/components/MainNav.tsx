@@ -81,6 +81,15 @@ export function MainNav() {
             Clientes
           </Link>
         </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link
+            to="/contas-pagar"
+            className="flex items-center gap-2 text-sm font-medium hover:text-primary"
+          >
+            <DollarSign className="h-4 w-4" />
+            Contas a Pagar
+          </Link>
+        </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
   );
