@@ -1,4 +1,24 @@
 -- Create a table for storing produtos
+-- Criar tabela de representantes
+create table representantes (
+  id uuid default gen_random_uuid() primary key,
+  nome text not null,
+  empresa text not null,
+  telefone text not null,
+  email text not null,
+  created_at timestamp with time zone default now() not null
+);
+
+-- Criar política de segurança para representantes
+create policy "Enable all operations for all users" on representantes
+  for all
+  to anon, authenticated
+  using (true)
+  with check (true);
+
+-- Habilitar RLS para a tabela de representantes
+alter table representantes enable row level security;
+
 create table produtos (
   id uuid default gen_random_uuid() primary key,
   nome text not null,
