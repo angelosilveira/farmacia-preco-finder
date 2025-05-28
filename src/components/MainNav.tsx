@@ -4,7 +4,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-import { ClipboardList, ListChecks, Users } from "lucide-react";
+import { ClipboardList, ListChecks, Users, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function MainNav() {
@@ -46,6 +46,15 @@ export function MainNav() {
           >
             <Users className="h-4 w-4" />
             Representantes
+          </Link>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link
+            to="/caixa"
+            className="flex items-center gap-2 text-sm font-medium hover:text-primary"
+          >
+            <DollarSign className="h-4 w-4" />
+            Caixa
           </Link>
         </NavigationMenuItem>
       </NavigationMenuList>

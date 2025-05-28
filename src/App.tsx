@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Produtos from "./pages/Produtos";
 import Categorias from "./pages/Categorias";
 import Representantes from "./pages/Representantes";
+import Caixa from "./pages/Caixa";
 import NotFound from "./pages/NotFound";
 import { MainNav } from "./components/MainNav";
 
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/produtos/*" element={<Produtos />} />
               <Route path="/categorias/*" element={<Categorias />} />
               <Route path="/representantes/*" element={<Representantes />} />
+              <Route path="/caixa/*" element={<Caixa />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
