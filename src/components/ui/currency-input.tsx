@@ -1,7 +1,8 @@
-import { Input, InputProps } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import React, { useEffect, useState } from "react";
 
-interface CurrencyInputProps extends Omit<InputProps, "onChange"> {
+interface CurrencyInputProps
+  extends Omit<React.ComponentProps<"input">, "onChange"> {
   value: string;
   onChange: (value: string) => void;
 }
@@ -11,10 +12,8 @@ export function CurrencyInput({
   onChange,
   ...props
 }: CurrencyInputProps) {
-  // Mantém o valor formatado internamente
   const [displayValue, setDisplayValue] = useState(value);
 
-  // Atualiza o display value quando o value prop muda
   useEffect(() => {
     setDisplayValue(value);
   }, [value]);
@@ -31,8 +30,8 @@ export function CurrencyInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
 
-    // Remove tudo que não é número ou ponto
-    const numbers = inputValue.replace(/[^\d.]/g, "");
+    // Remove tudo que não é número
+    const numbers = inputValue.replace(/\D/g, "");
 
     // Se vazio, retorna zero
     if (!numbers) {
@@ -43,14 +42,8 @@ export function CurrencyInput({
     }
 
     try {
-      // Converte para número
-      let numberValue = parseFloat(numbers);
-
-      // Se o input não tem ponto decimal, assume que é um valor inteiro
-      if (!inputValue.includes(".")) {
-        numberValue = numberValue / 100;
-      }
-
+      // Converte para valor monetário (divide por 100 para considerar centavos)
+      const numberValue = parseInt(numbers, 10) / 100;
       const formatted = formatCurrency(numberValue);
       setDisplayValue(formatted);
       onChange(formatted);
@@ -60,7 +53,6 @@ export function CurrencyInput({
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Garante que o valor está sempre formatado no blur
     if (props.onBlur) {
       props.onBlur(e);
     }

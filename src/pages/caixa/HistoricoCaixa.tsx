@@ -34,6 +34,7 @@ type FechamentoCaixa = {
   observacoes: string | null;
   data_fechamento: string;
   created_at: string;
+  responsavel_nome: string;
 };
 
 export default function HistoricoCaixa() {
@@ -113,6 +114,7 @@ export default function HistoricoCaixa() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Responsável</TableHead>
               <TableHead>Data</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Diferença</TableHead>
@@ -135,6 +137,7 @@ export default function HistoricoCaixa() {
             ) : (
               filteredFechamentos.map((fechamento) => (
                 <TableRow key={fechamento.id}>
+                  <TableCell>{fechamento.responsavel_nome}</TableCell>
                   <TableCell>
                     {format(
                       new Date(fechamento.data_fechamento),

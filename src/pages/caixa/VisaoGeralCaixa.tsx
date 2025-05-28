@@ -15,6 +15,7 @@ type FechamentoCaixa = {
   total: number;
   diferenca: number;
   data_fechamento: string;
+  responsavel: string;
 };
 
 export default function VisaoGeralCaixa() {

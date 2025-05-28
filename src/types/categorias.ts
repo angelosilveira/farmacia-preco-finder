@@ -1,7 +1,3 @@
-import type { Database } from "./database.types";
-
-export type Categoria = Database["public"]["Tables"]["categorias"]["Row"];
-
 export type CategoriaType =
   | "Medicamentos"
   | "Perfumaria"
@@ -11,7 +7,6 @@ export type CategoriaType =
   | "Nutrição"
   | "Outros";
 
-// For backward compatibility
 export interface Representante {
   nome: string;
   categorias: CategoriaType[];

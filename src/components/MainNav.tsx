@@ -4,13 +4,19 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-import { ClipboardList, ListChecks, Users, DollarSign } from "lucide-react";
+import {
+  ClipboardList,
+  ListChecks,
+  Users,
+  DollarSign,
+  UserCircle,
+  HeartHandshake,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function MainNav() {
   return (
     <NavigationMenu className="max-w-fit">
-      {" "}
       <NavigationMenuList className="flex gap-6">
         <NavigationMenuItem>
           <Link
@@ -55,6 +61,24 @@ export function MainNav() {
           >
             <DollarSign className="h-4 w-4" />
             Caixa
+          </Link>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link
+            to="/colaboradores"
+            className="flex items-center gap-2 text-sm font-medium hover:text-primary"
+          >
+            <UserCircle className="h-4 w-4" />
+            Colaboradores
+          </Link>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link
+            to="/clientes"
+            className="flex items-center gap-2 text-sm font-medium hover:text-primary"
+          >
+            <HeartHandshake className="h-4 w-4" />
+            Clientes
           </Link>
         </NavigationMenuItem>
       </NavigationMenuList>

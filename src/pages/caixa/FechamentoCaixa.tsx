@@ -73,17 +73,17 @@ export default function FechamentoCaixa() {
     async function fetchUsuarios() {
       try {
         const { data: users, error } = await supabase
-          .from("usuarios")
+          .from("colaboradores")
           .select("id, nome, email")
           .order("nome");
 
         if (error) throw error;
         setUsuarios(users || []);
       } catch (error) {
-        console.error("Erro ao carregar usuários:", error);
+        console.error("Erro ao carregar colaboradores:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar a lista de usuários.",
+          description: "Não foi possível carregar a lista de colaboradores.",
           variant: "destructive",
         });
       }
@@ -92,25 +92,35 @@ export default function FechamentoCaixa() {
     fetchUsuarios();
   }, []);
 
-  const parseValue = (val: string) =>
-    parseFloat(val.replace(/[^\d,-]/g, "").replace(",", "."));
+  const parseValue = (val: string): number => {
+    if (!val) return 0;
+    // Remove tudo que não é número ou vírgula
+    const clean = val.replace(/[^\d,]/g, "").replace(/,/g, ".");
+    const parsed = parseFloat(clean);
+    return isNaN(parsed) ? 0 : parsed;
+  };
 
-  const formatCurrency = (value: number): string => {
+  const formatCurrency = (num: number): string => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value);
+    }).format(num);
   };
 
+  // Watch para atualização em tempo real dos campos
+  const dinheiroWatch = form.watch("dinheiro");
+  const pixWatch = form.watch("pix");
+  const cartaoCreditoWatch = form.watch("cartaoCredito");
+  const cartaoDebitoWatch = form.watch("cartaoDebito");
+
   const calculateTotal = () => {
-    const values = form.getValues();
     const total =
-      parseValue(values.dinheiro) +
-      parseValue(values.pix) +
-      parseValue(values.cartaoCredito) +
-      parseValue(values.cartaoDebito);
+      parseValue(dinheiroWatch) +
+      parseValue(pixWatch) +
+      parseValue(cartaoCreditoWatch) +
+      parseValue(cartaoDebitoWatch);
     return formatCurrency(total);
   };
 
@@ -126,6 +136,10 @@ export default function FechamentoCaixa() {
       const total = dinheiro + pix + cartaoCredito + cartaoDebito;
       const diferenca = total - valorInicial;
 
+      // Buscar o nome do colaborador selecionado
+      const responsavelObj = usuarios.find((u) => u.id === values.responsavel);
+      const responsavelNome = responsavelObj ? responsavelObj.nome : "";
+
       const { error } = await supabase.from("fechamentos_caixa").insert([
         {
           valor_inicial: valorInicial,
@@ -136,6 +150,7 @@ export default function FechamentoCaixa() {
           total,
           diferenca,
           responsavel: values.responsavel,
+          responsavel_nome: responsavelNome,
           observacoes: values.observacoes,
           data_fechamento: new Date().toISOString(),
         },
