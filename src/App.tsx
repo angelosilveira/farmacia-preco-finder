@@ -18,6 +18,7 @@ import AdicionarCliente from "./pages/clientes/AdicionarCliente";
 import EditarCliente from "./pages/clientes/EditarCliente";
 import Cobrancas from "./pages/clientes/Cobrancas";
 import Pagamentos from "./pages/clientes/Pagamentos";
+import ImportarClientes from "./pages/clientes/ImportarClientes";
 import ContasPagar from "./pages/ContasPagar";
 import NotFound from "./pages/NotFound";
 import { MainNav } from "./components/MainNav";
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="editar/:id" element={<EditarCliente />} />
                 <Route path="cobrancas" element={<Cobrancas />} />
                 <Route path="pagamentos" element={<Pagamentos />} />
+                <Route path="importar" element={<ImportarClientes />} />
               </Route>
               <Route path="/contas-pagar/*" element={<ContasPagar />} />
               <Route path="*" element={<NotFound />} />

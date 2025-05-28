@@ -1,10 +1,10 @@
-import { HeartHandshake, PlusCircle } from "lucide-react";
+import { HeartHandshake, PlusCircle, UploadCloud } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
 import { Routes, Route } from "react-router-dom";
 import ListaClientes from "./clientes/ListaClientes";
 import AdicionarCliente from "./clientes/AdicionarCliente";
-// import EditarCliente, Cobrancas, Pagamentos as needed
+import ImportarClientes from "./clientes/ImportarClientes";
 
 const sidebarItems = [
   {
@@ -16,6 +16,11 @@ const sidebarItems = [
     name: "Adicionar Cliente",
     href: "/clientes/adicionar",
     icon: <PlusCircle className="h-4 w-4" />,
+  },
+  {
+    name: "Importar Clientes",
+    href: "/clientes/importar",
+    icon: <UploadCloud className="h-4 w-4" />,
   },
   // Add more items as needed
 ];
@@ -44,6 +49,7 @@ export default function Clientes() {
                   <Routes>
                     <Route path="/" element={<ListaClientes />} />
                     <Route path="/adicionar" element={<AdicionarCliente />} />
+                    <Route path="/importar" element={<ImportarClientes />} />
                     {/* <Route path="/editar/:id" element={<EditarCliente />} />
                     <Route path="/cobrancas" element={<Cobrancas />} />
                     <Route path="/pagamentos" element={<Pagamentos />} /> */}
