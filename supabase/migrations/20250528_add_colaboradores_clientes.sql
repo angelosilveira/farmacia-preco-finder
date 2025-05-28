@@ -24,3 +24,7 @@ create table clientes (
   saldo_devedor numeric(10,2) default 0,
   created_at timestamp with time zone default now() not null
 );
+
+-- Permitir email NULL e garantir que não haja valores vazios duplicados
+ALTER TABLE colaboradores ALTER COLUMN email DROP NOT NULL;
+UPDATE colaboradores SET email = NULL WHERE email = '';
