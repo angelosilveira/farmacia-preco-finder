@@ -87,12 +87,14 @@ export function CotacaoTable({
 
   const calcularDiferencaPercentual = (produto: Produto) => {
     const produtosDoGrupo = produtosAgrupados[produto.nome];
-    const menorPreco = Math.min(...produtosDoGrupo.map((p) => p.precoUnitario));
-
-    if (produto.precoUnitario === menorPreco) return null;
-
-    const diferenca = ((produto.precoUnitario - menorPreco) / menorPreco) * 100;
-    return Math.round(diferenca * 100) / 100; // Arredonda para 2 casas decimais
+    const menorPreco = Math.min(
+      ...produtosDoGrupo.map((p) => Number(p.precoUnitario) || 0)
+    );
+    const precoUnit = Number(produto.precoUnitario) || 0;
+    if (precoUnit === menorPreco) return null;
+    if (!menorPreco || !isFinite(menorPreco)) return null;
+    const diferenca = ((precoUnit - menorPreco) / menorPreco) * 100;
+    return Math.round(diferenca * 100) / 100;
   };
 
   const formatDate = (date: Date | string) => {
@@ -117,9 +119,13 @@ export function CotacaoTable({
 
   const handleSave = () => {
     if (editData) {
-      const precoTotal = editData.precoUnitario * editData.quantidade;
+      const precoUnit = Number(editData.precoUnitario) || 0;
+      const qtd = Number(editData.quantidade) || 0;
+      const precoTotal = precoUnit * qtd;
       const produtoAtualizado: Produto = {
         ...editData,
+        precoUnitario: precoUnit,
+        quantidade: qtd,
         precoTotal,
         dataAtualizacao: new Date(),
       };
@@ -331,7 +337,7 @@ export function CotacaoTable({
                                 className="w-24"
                               />
                             ) : (
-                              formatCurrency(produto.precoUnitario)
+                              formatCurrency(Number(produto.precoUnitario) || 0)
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -386,16 +392,20 @@ export function CotacaoTable({
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
                             {editingId === produto.id
                               ? formatCurrency(
-                                  (editData?.precoUnitario || 0) *
-                                    (editData?.quantidade || 0)
+                                  (Number(editData?.precoUnitario) || 0) *
+                                    (Number(editData?.quantidade) || 0)
                                 )
-                              : formatCurrency(produto.precoTotal)}
+                              : formatCurrency(
+                                  (Number(produto.precoUnitario) || 0) *
+                                    (Number(produto.quantidade) || 0)
+                                )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {(() => {
                               const diferenca =
                                 calcularDiferencaPercentual(produto);
-                              if (diferenca === null) return "-";
+                              if (diferenca === null || isNaN(diferenca))
+                                return "-";
                               return (
                                 <span className="text-orange-600">
                                   {diferenca.toFixed(1)}% mais caro

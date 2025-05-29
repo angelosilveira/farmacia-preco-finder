@@ -1,24 +1,30 @@
 import { CategoriaType } from "./categorias";
 
-/** Representa um produto com cotação de preço */
-export interface Produto {
-  /** UUID v4 único para identificar o produto */
+/** Representa uma cotação da tabela cotacoes */
+export interface Cotacao {
   id: string;
-  /** Nome do produto */
+  produto_id?: string | null;
   nome: string;
-  /** Categoria do produto */
-  categoria: CategoriaType;
-  /** Preço unitário do produto */
-  precoUnitario: number;
-  /** Quantidade do produto */
+  categoria?: CategoriaType | string;
+  preco_unitario: number;
   quantidade: number;
-  /** Unidade de medida (ex: Comprimido, ml, etc) */
+  unidade_medida?: string;
+  preco_total: number;
+  representante?: string;
+  data_atualizacao?: string | Date;
+  created_at?: string;
+}
+
+/** Representa um produto com cotação de preço (formulário/UI) */
+export interface Produto {
+  id: string;
+  nome: string;
+  categoria: CategoriaType;
+  precoUnitario: number;
+  quantidade: number;
   unidadeMedida: string;
-  /** Preço total (precoUnitario * quantidade) */
   precoTotal: number;
-  /** Nome do representante */
   representante: string;
-  /** Data da última atualização */
   dataAtualizacao: Date;
 }
 
@@ -27,4 +33,36 @@ export interface MelhorPreco {
   menorPreco: number;
   representante: string;
   unidadeMedida: string;
+}
+
+/** Utilitário para converter Cotacao (db) para Produto (UI) */
+export function cotacaoToProduto(c: Cotacao): Produto {
+  return {
+    id: c.id,
+    nome: c.nome,
+    categoria: (c.categoria as CategoriaType) || "Outros",
+    precoUnitario: Number(c.preco_unitario),
+    quantidade: Number(c.quantidade),
+    unidadeMedida: c.unidade_medida || "",
+    precoTotal: Number(c.preco_total),
+    representante: c.representante || "",
+    dataAtualizacao: c.data_atualizacao
+      ? new Date(c.data_atualizacao)
+      : new Date(),
+  };
+}
+
+/** Utilitário para converter Produto (UI) para Cotacao (db) */
+export function produtoToCotacao(p: Produto): Cotacao {
+  return {
+    id: p.id,
+    nome: p.nome,
+    categoria: p.categoria,
+    preco_unitario: p.precoUnitario,
+    quantidade: p.quantidade,
+    unidade_medida: p.unidadeMedida,
+    preco_total: p.precoTotal,
+    representante: p.representante,
+    data_atualizacao: p.dataAtualizacao,
+  };
 }

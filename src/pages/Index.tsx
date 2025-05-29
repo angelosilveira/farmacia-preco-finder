@@ -2,57 +2,66 @@ import React, { useState, useCallback, useEffect } from "react";
 import { CotacaoForm } from "@/components/CotacaoForm";
 import { CotacaoTable } from "@/components/CotacaoTable";
 import { StatsSummary } from "@/components/StatsSummary";
-import { Produto } from "@/types/cotacao";
 import { ClipboardList, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
 import { PostgrestError } from "@supabase/supabase-js";
+import {
+  Cotacao,
+  Produto,
+  cotacaoToProduto,
+  produtoToCotacao,
+} from "@/types/cotacao";
 
 const Index = () => {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [cotacoes, setCotacoes] = useState<Cotacao[]>([]);
   const [produtoParaDuplicar, setProdutoParaDuplicar] = useState<
     Produto | undefined
   >();
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Função memoizada para buscar produtos
-  const fetchProdutos = useCallback(async () => {
+  // Função memoizada para buscar cotações
+  const fetchCotacoes = useCallback(async () => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from("produtos")
+        .from("cotacoes")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) {
         throw error;
-      } // Converte as datas de string para Date e garante que são datas válidas
-      const produtosFormatados = data.map((produto) => {
-        const dataAtualizacao = new Date(produto.dataAtualizacao);
-        // Se a data for inválida, usa a data atual
-        if (isNaN(dataAtualizacao.getTime())) {
-          console.warn(
-            `Data inválida para o produto ${produto.id}, usando data atual`
-          );
+      }
+      // Converte as datas de string para Date e garante que são datas válidas
+      const cotacoesFormatadas = data.map(
+        (cotacao: Cotacao | { dataAtualizacao?: string }) => {
+          let dataAtualizacao: Date;
+          if ("data_atualizacao" in cotacao && cotacao.data_atualizacao) {
+            dataAtualizacao = new Date(cotacao.data_atualizacao);
+          } else if (
+            "dataAtualizacao" in cotacao &&
+            typeof cotacao.dataAtualizacao === "string"
+          ) {
+            dataAtualizacao = new Date(cotacao.dataAtualizacao);
+          } else {
+            dataAtualizacao = new Date();
+          }
           return {
-            ...produto,
-            dataAtualizacao: new Date(),
-          };
+            ...cotacao,
+            data_atualizacao: isNaN(dataAtualizacao.getTime())
+              ? new Date()
+              : dataAtualizacao,
+          } as Cotacao;
         }
-        return {
-          ...produto,
-          dataAtualizacao,
-        };
-      });
-
-      setProdutos(produtosFormatados);
+      );
+      setCotacoes(cotacoesFormatadas);
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Erro desconhecido";
       toast({
-        title: "Erro ao carregar produtos",
+        title: "Erro ao carregar cotações",
         description: message,
         variant: "destructive",
       });
@@ -62,25 +71,25 @@ const Index = () => {
     }
   }, [toast]);
 
-  // Carrega produtos do Supabase quando o componente monta
   useEffect(() => {
-    fetchProdutos();
-  }, [fetchProdutos]);
+    fetchCotacoes();
+  }, [fetchCotacoes]);
 
+  // Adapta para inserir na tabela cotacoes
   const handleAddProduto = async (novoProduto: Produto) => {
     try {
+      const cotacao = produtoToCotacao(novoProduto);
       const { data, error } = await supabase
-        .from("produtos")
-        .insert([novoProduto])
+        .from("cotacoes")
+        .insert([cotacao])
         .select()
         .single();
 
       if (error) throw error;
 
       if (data) {
-        setProdutos((prev) => [data, ...prev]);
+        setCotacoes((prev) => [data, ...prev]);
         setProdutoParaDuplicar(undefined);
-
         toast({
           title: "Sucesso!",
           description: "Cotação adicionada com sucesso.",
@@ -98,17 +107,23 @@ const Index = () => {
     }
   };
 
+  // Atualiza cotação na tabela cotacoes
   const handleEditProduto = async (id: string, produtoEditado: Produto) => {
     try {
+      const cotacao = produtoToCotacao(produtoEditado);
       const { error } = await supabase
-        .from("produtos")
-        .update(produtoEditado)
+        .from("cotacoes")
+        .update(cotacao)
         .eq("id", id);
 
       if (error) throw error;
 
-      setProdutos((prev) =>
-        prev.map((produto) => (produto.id === id ? produtoEditado : produto))
+      setCotacoes((prev) =>
+        prev.map((cotacao) =>
+          cotacao.id === id
+            ? { ...cotacao, ...produtoToCotacao(produtoEditado) }
+            : cotacao
+        )
       );
 
       toast({
@@ -130,22 +145,19 @@ const Index = () => {
   const handleDuplicateProduto = (produto: Produto) => {
     setProdutoParaDuplicar({
       ...produto,
-      id: "", // Clear ID so a new one will be generated
-      dataAtualizacao: new Date(), // Update the date
+      id: "",
+      dataAtualizacao: new Date(),
     });
-    // Scroll to form
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Remove cotação da tabela cotacoes
   const handleRemoveProduto = async (id: string) => {
     if (window.confirm("Tem certeza que deseja remover esta cotação?")) {
       try {
-        const { error } = await supabase.from("produtos").delete().eq("id", id);
-
+        const { error } = await supabase.from("cotacoes").delete().eq("id", id);
         if (error) throw error;
-
-        setProdutos((prev) => prev.filter((produto) => produto.id !== id));
-
+        setCotacoes((prev) => prev.filter((cotacao) => cotacao.id !== id));
         toast({
           title: "Sucesso!",
           description: "Cotação removida com sucesso.",
@@ -163,6 +175,7 @@ const Index = () => {
     }
   };
 
+  // Limpa todas as cotações
   const handleClearAllProdutos = async () => {
     if (
       window.confirm(
@@ -171,15 +184,12 @@ const Index = () => {
     ) {
       try {
         const { error } = await supabase
-          .from("produtos")
+          .from("cotacoes")
           .delete()
-          .neq("id", "0"); // Deleta todos os registros
-
+          .neq("id", "0");
         if (error) throw error;
-
-        setProdutos([]);
+        setCotacoes([]);
         setProdutoParaDuplicar(undefined);
-
         toast({
           title: "Sucesso!",
           description: "Todas as cotações foram removidas.",
@@ -198,21 +208,21 @@ const Index = () => {
   };
 
   // Função para verificar se é o menor preço
-  const isMelhorPreco = (produto: Produto) => {
-    const produtosComMesmoNome = produtos.filter(
-      (p) => p.nome === produto.nome
+  const isMelhorPreco = (cotacao: Cotacao) => {
+    const cotacoesComMesmoNome = cotacoes.filter(
+      (p) => p.nome === cotacao.nome
     );
     const menorPreco = Math.min(
-      ...produtosComMesmoNome.map((p) => p.precoUnitario)
+      ...cotacoesComMesmoNome.map((p) => Number(p.preco_unitario) || 0)
     );
-    return produto.precoUnitario === menorPreco;
+    return Number(cotacao.preco_unitario) === menorPreco;
   };
 
-  // Ordenar produtos
-  const produtosOrdenados = [...produtos].sort((a, b) => {
-    const representanteComparison = a.representante.localeCompare(
-      b.representante
-    );
+  // Ordenar cotações
+  const cotacoesOrdenadas = [...cotacoes].sort((a, b) => {
+    const repA = a.representante || "";
+    const repB = b.representante || "";
+    const representanteComparison = repA.localeCompare(repB);
     if (representanteComparison !== 0) return representanteComparison;
 
     const aEhMenorPreco = isMelhorPreco(a);
@@ -221,8 +231,11 @@ const Index = () => {
     if (aEhMenorPreco && !bEhMenorPreco) return 1;
     if (!aEhMenorPreco && bEhMenorPreco) return -1;
 
-    return b.precoUnitario - a.precoUnitario;
+    return (Number(b.preco_unitario) || 0) - (Number(a.preco_unitario) || 0);
   });
+
+  // Conversão para Produto[] para UI components
+  const produtosUI: Produto[] = cotacoesOrdenadas.map(cotacaoToProduto);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -253,14 +266,14 @@ const Index = () => {
           variant="destructive"
           className="gap-2"
           onClick={handleClearAllProdutos}
-          disabled={produtos.length === 0}
+          disabled={cotacoes.length === 0}
         >
           <Trash2 className="h-4 w-4" />
           Limpar Cotações
         </Button>
       </div>
 
-      <StatsSummary produtos={produtos} />
+      <StatsSummary produtos={produtosUI} />
 
       <div className="flex flex-col gap-6">
         <CotacaoForm
@@ -268,11 +281,15 @@ const Index = () => {
           initialData={produtoParaDuplicar}
         />
         <CotacaoTable
-          produtos={produtosOrdenados}
+          produtos={produtosUI}
           onEditProduto={handleEditProduto}
           onDuplicateProduto={handleDuplicateProduto}
           onRemoveProduto={handleRemoveProduto}
-          isMelhorPreco={isMelhorPreco}
+          isMelhorPreco={(produto) => {
+            // Recebe Produto, converte para Cotacao para lógica
+            const cotacao = produtoToCotacao(produto);
+            return isMelhorPreco(cotacao);
+          }}
           formatCurrency={formatCurrency}
         />
       </div>
