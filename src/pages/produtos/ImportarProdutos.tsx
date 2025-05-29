@@ -14,10 +14,23 @@ import {
 } from "@/components/ui/table";
 import type { Produto } from "@/types/cotacao";
 
+// Define o tipo ProdutoImportacao para o schema de produtos da farmácia
+interface ProdutoImportacao {
+  codigo: string;
+  nome: string;
+  laboratorio?: string;
+  grupo?: string;
+  curva_abc?: string;
+  estoque: number;
+  preco_compra: number;
+  preco_custo: number;
+  preco_venda: number;
+}
+
 export default function ImportarProdutos() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(false);
-  const [produtos, setProdutos] = useState<Partial<Produto>[]>([]);
+  const [produtos, setProdutos] = useState<ProdutoImportacao[]>([]);
   const [fileName, setFileName] = useState("");
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -26,32 +39,52 @@ export default function ImportarProdutos() {
     setFileName(file.name);
     setLoading(true);
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-      const produtosParsed: Partial<Produto>[] = (
-        json as { [key: string]: unknown }[]
-      ).map((row) => {
-        const r = row as { [key: string]: unknown };
-        const precoUnitario = Number(
-          r.precoUnitario ?? r["Preço Unitário"] ?? 0
-        );
-        const quantidade = Number(r.quantidade ?? r.Quantidade ?? 1);
-
+      const text = await file.text();
+      // Corrige encoding se necessário
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      // Ignora as 3 primeiras linhas (cabeçalho)
+      const dataLines = lines.slice(3);
+      // A primeira linha útil é o header
+      const header = dataLines[0].split(";").map((h) => h.trim());
+      // Linhas de dados
+      const rows = dataLines
+        .slice(1)
+        .filter((l) => l.trim() && l.includes(";"));
+      const produtosParsed: ProdutoImportacao[] = rows.map((line) => {
+        const cols = line.split(";");
+        // Mapeamento dos campos
+        const [
+          codigo,
+          produto, // campo vazio
+          ,
+          laboratorio,
+          grupo, // campo vazio
+          ,
+          curvaABC, // campo vazio
+          ,
+          estoq,
+          precoCompra, // campo vazio
+          ,
+          precoCusto, // campos vazios
+          ,
+          ,
+          ,
+          ,
+          precoVenda,
+        ] = cols;
+        // Função para converter moeda BR
+        const parseBRL = (v: string) =>
+          Number(v.replace(/\./g, "").replace(",", ".")) || 0;
         return {
-          nome: String(r.nome ?? r.Nome ?? ""),
-          categoria: String(
-            r.categoria ?? r.Categoria ?? "Medicamentos"
-          ) as Produto["categoria"],
-          precoUnitario,
-          quantidade,
-          unidadeMedida: String(
-            r.unidadeMedida ?? r["Unidade Medida"] ?? r["Unidade"] ?? "Unidade"
-          ),
-          precoTotal: precoUnitario * quantidade,
-          representante: String(r.representante ?? r.Representante ?? ""),
+          codigo: codigo?.trim() || "",
+          nome: produto?.trim() || "",
+          laboratorio: laboratorio?.trim() || undefined,
+          grupo: grupo?.trim() || undefined,
+          curva_abc: curvaABC?.trim() || undefined,
+          estoque: Number(estoq?.replace(/\D/g, "")) || 0,
+          preco_compra: parseBRL(precoCompra),
+          preco_custo: parseBRL(precoCusto),
+          preco_venda: parseBRL(precoVenda),
         };
       });
       setProdutos(produtosParsed);
@@ -73,9 +106,8 @@ export default function ImportarProdutos() {
   async function handleImport() {
     setLoading(true);
     try {
-      const validos = produtos.filter(
-        (p) => p.nome && p.precoUnitario && p.representante
-      );
+      // Considera válidos produtos com nome e código
+      const validos = produtos.filter((p) => p.nome && p.codigo);
       if (validos.length === 0) {
         toast({
           variant: "destructive",
@@ -84,6 +116,7 @@ export default function ImportarProdutos() {
         setLoading(false);
         return;
       }
+      // Insere os produtos no Supabase
       const { error } = await supabase.from("produtos").insert(validos);
       if (error) throw error;
       toast({
@@ -134,35 +167,44 @@ export default function ImportarProdutos() {
                 <Table className="min-w-[900px] w-full">
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Código</TableHead>
                       <TableHead>Nome</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Preço Unit.</TableHead>
-                      <TableHead>Qtd</TableHead>
-                      <TableHead>Un. Medida</TableHead>
-                      <TableHead>Preço Total</TableHead>
-                      <TableHead>Representante</TableHead>
+                      <TableHead>Laboratório</TableHead>
+                      <TableHead>Grupo</TableHead>
+                      <TableHead>Curva ABC</TableHead>
+                      <TableHead>Estoque</TableHead>
+                      <TableHead>Preço Compra</TableHead>
+                      <TableHead>Preço Custo</TableHead>
+                      <TableHead>Preço Venda</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {produtos.slice(0, 20).map((p, i) => (
                       <TableRow key={i}>
+                        <TableCell>{p.codigo}</TableCell>
                         <TableCell>{p.nome}</TableCell>
-                        <TableCell>{p.categoria}</TableCell>
+                        <TableCell>{p.laboratorio}</TableCell>
+                        <TableCell>{p.grupo}</TableCell>
+                        <TableCell>{p.curva_abc}</TableCell>
+                        <TableCell>{p.estoque}</TableCell>
                         <TableCell>
-                          {p.precoUnitario?.toLocaleString("pt-BR", {
+                          {p.preco_compra.toLocaleString("pt-BR", {
                             style: "currency",
                             currency: "BRL",
                           })}
                         </TableCell>
-                        <TableCell>{p.quantidade}</TableCell>
-                        <TableCell>{p.unidadeMedida}</TableCell>
                         <TableCell>
-                          {p.precoTotal?.toLocaleString("pt-BR", {
+                          {p.preco_custo.toLocaleString("pt-BR", {
                             style: "currency",
                             currency: "BRL",
                           })}
                         </TableCell>
-                        <TableCell>{p.representante}</TableCell>
+                        <TableCell>
+                          {p.preco_venda.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          })}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -185,10 +227,10 @@ export default function ImportarProdutos() {
             </>
           )}
           <div className="text-sm text-muted-foreground">
-            O arquivo deve conter as colunas: <b>nome</b>, <b>categoria</b>,{" "}
-            <b>precoUnitario</b>, <b>quantidade</b>, <b>unidadeMedida</b>,{" "}
-            <b>representante</b>.<br />
-            Linhas sem nome, preço unitário ou representante serão ignoradas.
+            O arquivo deve conter as colunas: <b>código</b>, <b>nome</b>,{" "}
+            <b>laboratório</b>, <b>grupo</b>, <b>curva_abc</b>, <b>estoque</b>,{" "}
+            <b>preço_compra</b>, <b>preço_custo</b>, <b>preço_venda</b>.<br />
+            Linhas sem nome ou código serão ignoradas.
           </div>
         </CardContent>
       </Card>

@@ -30,40 +30,27 @@ export function CurrencyInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
 
-    // Remove tudo que não é número
-    const numbers = inputValue.replace(/\D/g, "");
+    // Remove currency symbol, separators and any non-digits
+    const numbers = inputValue.replace(/[^\d]/g, "");
 
-    // Se vazio, retorna zero
-    if (!numbers) {
-      const formatted = formatCurrency(0);
-      setDisplayValue(formatted);
-      onChange(formatted);
-      return;
-    }
+    // Convert to number considering decimal places
+    const numberValue = parseInt(numbers, 10) / 100;
 
-    try {
-      // Converte para valor monetário (divide por 100 para considerar centavos)
-      const numberValue = parseInt(numbers, 10) / 100;
-      const formatted = formatCurrency(numberValue);
-      setDisplayValue(formatted);
-      onChange(formatted);
-    } catch (error) {
-      console.error("Error formatting currency:", error);
-    }
-  };
+    // Format the value
+    const formatted = formatCurrency(numberValue);
+    setDisplayValue(formatted);
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (props.onBlur) {
-      props.onBlur(e);
-    }
+    // Call onChange with the formatted value
+    onChange(formatted);
   };
 
   return (
     <Input
-      {...props}
+      type="text"
       value={displayValue}
       onChange={handleChange}
-      onBlur={handleBlur}
+      placeholder="R$ 0,00"
+      {...props}
     />
   );
 }

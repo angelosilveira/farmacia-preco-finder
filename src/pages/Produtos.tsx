@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
 import { Routes, Route } from "react-router-dom";
 import ImportarProdutos from "./produtos/ImportarProdutos";
+import ListaProdutos from "./produtos/ListaProdutos";
 
 const sidebarItems = [
   {
@@ -57,6 +58,7 @@ export default function Produtos() {
                 <CardContent>
                   <Routes>
                     <Route path="/importar" element={<ImportarProdutos />} />
+                    <Route path="/lista" element={<ListaProdutos />} />
                     {/* Outras rotas aqui */}
                   </Routes>
                 </CardContent>
