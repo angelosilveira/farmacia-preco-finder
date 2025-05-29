@@ -22,6 +22,7 @@ import ImportarClientes from "./pages/clientes/ImportarClientes";
 import ContasPagar from "./pages/ContasPagar";
 import NotFound from "./pages/NotFound";
 import { MainNav } from "./components/MainNav";
+import UsuariosPage from "./pages/UsuariosPage";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
                 <Route path="importar" element={<ImportarClientes />} />
               </Route>
               <Route path="/contas-pagar/*" element={<ContasPagar />} />
+              <Route path="/usuarios/*" element={<UsuariosPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

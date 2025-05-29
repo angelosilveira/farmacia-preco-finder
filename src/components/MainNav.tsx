@@ -90,6 +90,15 @@ export function MainNav() {
             Contas a Pagar
           </Link>
         </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link
+            to="/usuarios"
+            className="flex items-center gap-2 text-sm font-medium hover:text-primary"
+          >
+            <UserCircle className="h-4 w-4" />
+            Usuários
+          </Link>
+        </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
   );

@@ -1,4 +1,9 @@
-import { HeartHandshake, PlusCircle, UploadCloud } from "lucide-react";
+import {
+  HeartHandshake,
+  PlusCircle,
+  UploadCloud,
+  UserCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
 import { Routes, Route } from "react-router-dom";
@@ -21,6 +26,11 @@ const sidebarItems = [
     name: "Importar Clientes",
     href: "/clientes/importar",
     icon: <UploadCloud className="h-4 w-4" />,
+  },
+  {
+    name: "Usuários",
+    href: "/usuarios",
+    icon: <UserCircle className="h-4 w-4" />,
   },
   // Add more items as needed
 ];
