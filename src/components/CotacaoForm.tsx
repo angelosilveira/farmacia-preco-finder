@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Produto } from "@/types/cotacao";
-import { CategoriaType, REPRESENTANTES } from "@/types/categorias";
+import { CategoriaType } from "@/types/categorias";
 import { Calculator } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Autocomplete } from "@/components/ui/autocomplete";
@@ -23,6 +23,13 @@ interface ProdutoSugestao {
   unidade_medida?: string;
 }
 
+interface RepresentanteDB {
+  id: string;
+  nome: string;
+  contato?: string;
+  categorias?: string[];
+}
+
 interface CotacaoFormProps {
   onAddProduto: (produto: Produto) => void;
   initialData?: Produto;
@@ -30,9 +37,6 @@ interface CotacaoFormProps {
 
 export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
   const [nome, setNome] = useState("");
-  const [categoria, setCategoria] = useState<CategoriaType | "">(
-    "Medicamentos"
-  );
   const [precoUnitario, setPrecoUnitario] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [unidadeMedida, setUnidadeMedida] = useState("");
@@ -40,21 +44,22 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
   const [produtosSugestao, setProdutosSugestao] = useState<ProdutoSugestao[]>(
     []
   );
+  const [representantesDB, setRepresentantesDB] = useState<RepresentanteDB[]>(
+    []
+  );
   const [isLoadingProdutos, setIsLoadingProdutos] = useState(false);
+  const [isLoadingRepresentantes, setIsLoadingRepresentantes] = useState(false);
 
   // Update form when initialData changes
   useEffect(() => {
     if (initialData) {
       setNome(initialData.nome);
-      setCategoria(initialData.categoria);
       setPrecoUnitario(initialData.precoUnitario.toString());
       setQuantidade(initialData.quantidade.toString());
       setUnidadeMedida(initialData.unidadeMedida);
       setRepresentante(initialData.representante);
     } else {
-      // Clear form when initialData is removed, but keep Medicamentos as default category
       setNome("");
-      setCategoria("Medicamentos");
       setPrecoUnitario("");
       setQuantidade("");
       setUnidadeMedida("");
@@ -62,13 +67,22 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
     }
   }, [initialData]);
 
-  // Filtra os representantes baseado na categoria selecionada
-  const representantesFiltrados = useMemo(() => {
-    if (!categoria) return [];
-    return REPRESENTANTES.filter((rep) =>
-      rep.categorias.includes(categoria)
-    ).map((rep) => rep.nome);
-  }, [categoria]);
+  // Buscar representantes do Supabase ao carregar
+  useEffect(() => {
+    async function fetchRepresentantes() {
+      setIsLoadingRepresentantes(true);
+      const { data, error } = await supabase
+        .from("representantes")
+        .select("id, nome");
+      if (!error && data) {
+        setRepresentantesDB(data);
+      } else {
+        setRepresentantesDB([]);
+      }
+      setIsLoadingRepresentantes(false);
+    }
+    fetchRepresentantes();
+  }, []);
 
   // Função para buscar produtos do Supabase conforme o texto digitado
   const fetchProdutos = useCallback(async (termo: string) => {
@@ -116,7 +130,6 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
   }) => {
     const produto = option.produto;
     setNome(produto.nome);
-    if (produto.categoria) setCategoria(produto.categoria as CategoriaType);
     if (produto.unidade_medida) setUnidadeMedida(produto.unidade_medida);
     setProdutosSugestao([]);
   };
@@ -126,7 +139,6 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
 
     if (
       !nome ||
-      !categoria ||
       !precoUnitario ||
       !quantidade ||
       !unidadeMedida ||
@@ -142,7 +154,7 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
     const novoProduto: Produto = {
       id: crypto.randomUUID(),
       nome,
-      categoria: categoria as CategoriaType,
+      categoria: "Outros", // valor padrão já que não existe mais campo
       precoUnitario: precoUnit,
       quantidade: qtd,
       unidadeMedida,
@@ -155,7 +167,6 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
 
     // Limpar formulário
     setNome("");
-    setCategoria("");
     setPrecoUnitario("");
     setQuantidade("");
     setUnidadeMedida("");
@@ -199,53 +210,24 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="categoria">Categoria</Label>
-              <Select
-                value={categoria}
-                onValueChange={(value) => {
-                  setCategoria(value as CategoriaType);
-                  setRepresentante("");
-                }}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Medicamentos">Medicamentos</SelectItem>
-                  <SelectItem value="Perfumaria">Perfumaria</SelectItem>
-                  <SelectItem value="Higiene Pessoal">
-                    Higiene Pessoal
-                  </SelectItem>
-                  <SelectItem value="Cosméticos">Cosméticos</SelectItem>
-                  <SelectItem value="Dermocosméticos">
-                    Dermocosméticos
-                  </SelectItem>
-                  <SelectItem value="Nutrição">Nutrição</SelectItem>
-                  <SelectItem value="Outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="representante">Representante</Label>
               <Select
                 value={representante}
                 onValueChange={setRepresentante}
                 required
-                disabled={!categoria}
+                disabled={isLoadingRepresentantes}
               >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      categoria ? "Selecione" : "Selecione categoria"
+                      isLoadingRepresentantes ? "Carregando..." : "Selecione"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {representantesFiltrados.map((rep) => (
-                    <SelectItem key={rep} value={rep}>
-                      {rep}
+                  {representantesDB.map((rep) => (
+                    <SelectItem key={rep.id} value={rep.nome}>
+                      {rep.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
