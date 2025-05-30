@@ -41,6 +41,25 @@ export function CotacaoTable({
 }: CotacaoTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Produto | null>(null);
+  // Estado para seleção dos produtos ganhadores por representante
+  const [produtosSelecionados, setProdutosSelecionados] = useState<
+    Record<string, Set<string>>
+  >(
+    {} // { representante: Set<produto.id> }
+  );
+
+  // Handler para marcar/desmarcar produto
+  const handleToggleProduto = (representante: string, produtoId: string) => {
+    setProdutosSelecionados((prev) => {
+      const atual = new Set(prev[representante] || []);
+      if (atual.has(produtoId)) {
+        atual.delete(produtoId);
+      } else {
+        atual.add(produtoId);
+      }
+      return { ...prev, [representante]: atual };
+    });
+  };
 
   // Agrupa produtos por nome
   const produtosAgrupados = produtos.reduce((acc, produto) => {
@@ -158,7 +177,14 @@ export function CotacaoTable({
       alert("Número de contato não cadastrado para este representante");
       return null;
     }
-
+    // Filtra apenas os produtos selecionados
+    const selecionados = produtosSelecionados[representante]
+      ? produtos.filter((p) => produtosSelecionados[representante].has(p.id))
+      : produtos;
+    if (selecionados.length === 0) {
+      alert("Selecione ao menos um produto para enviar ao WhatsApp.");
+      return null;
+    }
     const dataFormatada = new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
       month: "2-digit",
@@ -166,7 +192,7 @@ export function CotacaoTable({
     }).format(new Date());
     const mensagem =
       `Olá! Gostaria de fazer um pedido dos seguintes produtos com base nas últimas cotações (${dataFormatada}):\n\n` +
-      produtos
+      selecionados
         .map(
           (p) =>
             `- ${p.nome}\n` +
@@ -176,10 +202,12 @@ export function CotacaoTable({
         )
         .join("\n\n") +
       `\n\nValor total do pedido: ${formatCurrency(
-        produtos.reduce((total, p) => total + p.precoUnitario * p.quantidade, 0)
+        selecionados.reduce(
+          (total, p) => total + p.precoUnitario * p.quantidade,
+          0
+        )
       )}` +
       "\n\nPor favor, confirmar faturamento e disponibilidade dos produtos. Obrigado!";
-
     return {
       telefone: repInfo.contato,
       mensagem: encodeURIComponent(mensagem),
@@ -548,7 +576,19 @@ export function CotacaoTable({
                         }`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={
+                                !!produtosSelecionados[representante]?.has(
+                                  produto.id
+                                )
+                              }
+                              onChange={() =>
+                                handleToggleProduto(representante, produto.id)
+                              }
+                              className="accent-green-600"
+                            />
                             <div>
                               <div className="text-sm font-medium text-gray-900">
                                 {produto.nome}
