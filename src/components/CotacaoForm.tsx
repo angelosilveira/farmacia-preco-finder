@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,15 @@ import {
 import { Produto } from "@/types/cotacao";
 import { CategoriaType, REPRESENTANTES } from "@/types/categorias";
 import { Calculator } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Autocomplete } from "@/components/ui/autocomplete";
+
+interface ProdutoSugestao {
+  id: string;
+  nome: string;
+  categoria?: string;
+  unidade_medida?: string;
+}
 
 interface CotacaoFormProps {
   onAddProduto: (produto: Produto) => void;
@@ -28,6 +37,10 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
   const [quantidade, setQuantidade] = useState("");
   const [unidadeMedida, setUnidadeMedida] = useState("");
   const [representante, setRepresentante] = useState("");
+  const [produtosSugestao, setProdutosSugestao] = useState<ProdutoSugestao[]>(
+    []
+  );
+  const [isLoadingProdutos, setIsLoadingProdutos] = useState(false);
 
   // Update form when initialData changes
   useEffect(() => {
@@ -56,6 +69,57 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
       rep.categorias.includes(categoria)
     ).map((rep) => rep.nome);
   }, [categoria]);
+
+  // Função para buscar produtos do Supabase conforme o texto digitado
+  const fetchProdutos = useCallback(async (termo: string) => {
+    if (!termo || termo.length < 2) {
+      setProdutosSugestao([]);
+      return;
+    }
+    setIsLoadingProdutos(true);
+    const { data, error } = await supabase
+      .from("produtos")
+      .select("id, nome, grupo")
+      .ilike("nome", `%${termo}%`)
+      .limit(10);
+    if (!error && data) {
+      setProdutosSugestao(
+        (
+          data as {
+            id: string;
+            nome: string;
+            grupo?: string;
+          }[]
+        ).map((p) => ({
+          id: p.id,
+          nome: p.nome,
+          categoria: p.grupo, // usa grupo como categoria
+        }))
+      );
+    } else {
+      setProdutosSugestao([]);
+    }
+    setIsLoadingProdutos(false);
+  }, []);
+
+  // Handler para quando o usuário digita no autocomplete
+  const handleNomeChange = (value: string) => {
+    setNome(value);
+    fetchProdutos(value);
+  };
+
+  // Handler para quando o usuário seleciona um produto sugerido
+  const handleProdutoSelect = (option: {
+    value: string;
+    label: string;
+    produto: ProdutoSugestao;
+  }) => {
+    const produto = option.produto;
+    setNome(produto.nome);
+    if (produto.categoria) setCategoria(produto.categoria as CategoriaType);
+    if (produto.unidade_medida) setUnidadeMedida(produto.unidade_medida);
+    setProdutosSugestao([]);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,13 +180,21 @@ export function CotacaoForm({ onAddProduto, initialData }: CotacaoFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="nome">Nome do Produto</Label>
-              <Input
-                id="nome"
-                type="text"
+              <Autocomplete
                 value={nome}
-                onChange={(e) => setNome(e.target.value)}
+                onInputChange={handleNomeChange}
+                onSelect={handleProdutoSelect}
+                options={produtosSugestao.map((p) => ({
+                  value: p.nome,
+                  label: p.nome,
+                  produto: p,
+                }))}
+                loading={isLoadingProdutos}
                 placeholder="Ex: Dipirona 500mg"
-                required
+                inputProps={{
+                  id: "nome",
+                  required: true,
+                }}
               />
             </div>
 
